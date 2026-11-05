@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Post4Health Cold-Chain Tracker</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            posta: {
+              dark: '#006b3f',
+              700: '#006b3f',
+              800: '#005230',
+              gold: '#eab308'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Babel Standalone for JSX parsing -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+  </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-900 antialiased min-h-screen">
+  <div id="root">
+    <!-- Immediate Static Splash Screen while JavaScript loads -->
+    <div class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-6 text-center">
+      <div class="flex flex-col items-center space-y-6 max-w-xs">
+        <div class="relative">
+          <img
+            src="post4healthwellnessemblem.png"
+            alt="Post4Health Emblem"
+            class="w-32 h-32 object-contain drop-shadow-md"
+          />
+        </div>
+        <div>
+          <h1 class="text-2xl font-black text-slate-900 tracking-tight">Post4Health</h1>
+          <p class="text-xs font-bold text-[#006b3f] uppercase tracking-wider mt-1.5">Secure Medical Logistics</p>
+        </div>
+        <div class="flex flex-col items-center space-y-3 pt-4">
+          <div class="w-9 h-9 border-4 border-emerald-100 border-t-[#006b3f] rounded-full animate-spin shadow-sm"></div>
+          <p class="text-xs font-extrabold text-slate-700 tracking-wide">
+            Loading Secure Logistics...
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // --- EXPANDED SEED DATA WITH RECEIVER & ADMIN SCHEDULING DETAILS ---
+    const INITIAL_FACILITIES = [
+      { id: "FAC-001", name: "Aga Khan University Hospital", location: "3rd Parklands Avenue, Nairobi", county: "Nairobi", contactPerson: "Admin Test", phone: "0702896052" },
+      { id: "FAC-002", name: "Mater Misericordiae Hospital", location: "Mariakani Road, South B, Nairobi", county: "Nairobi", contactPerson: "Dr. Joseph Omondi", phone: "0702777888" },
+      { id: "FAC-003", name: "Moi Teaching and Referral Hospital", location: "Nandi Road, Eldoret", county: "Uasin Gishu", contactPerson: "Dr. Emmanuel Kiprop", phone: "0733333444" },
+      { id: "FAC-004", name: "Gertrude's Children's Hospital", location: "Muthaiga Road, Nairobi", county: "Nairobi", contactPerson: "Dr. Lucy Kamau", phone: "0701555666" },
+      { id: "FAC-005", name: "The Nairobi Hospital", location: "Argwings Kodhek Road, Upper Hill, Nairobi", county: "Nairobi", contactPerson: "Dr. David Njoroge", phone: "0720000111" },
+      { id: "FAC-006", name: "Mama Lucy Kibaki Hospital", location: "Kangundo Rd, Embakasi, Nairobi", county: "Nairobi", contactPerson: "Dr. Grace Wanjiru", phone: "0722987654" },
+      { id: "FAC-007", name: "Mbagathi County Hospital", location: "Mbagathi Way, Kibera, Nairobi", county: "Nairobi", contactPerson: "Dr. Samuel Otieno", phone: "0733456789" },
+      { id: "FAC-008", name: "Kenyatta National Hospital", location: "Hospital Road, Upper Hill, Nairobi", county: "Nairobi", contactPerson: "Dr. Sarah Maina", phone: "0712345678" },
+      { id: "FAC-009", name: "Jaramogi Oginga Odinga Referral Hospital", location: "Kaloleni, Kisumu", county: "Kisumu", contactPerson: "Dr. Florence Anyango", phone: "0711222333" },
+      { id: "FAC-010", name: "Coast General Teaching & Referral Hospital", location: "VOK Area, Kisauni, Mombasa", county: "Mombasa", contactPerson: "Dr. Hassan Ali", phone: "0703999000" },
+      { id: "FAC-011", name: "Nakuru Level 5 Hospital", location: "Showground Road, Nakuru", county: "Nakuru", contactPerson: "Dr. Bernard Njuguna", phone: "0722444555" },
+      { id: "FAC-012", name: "Machakos Level 5 Hospital", location: "Machakos-Kitui Road, Machakos", county: "Machakos", contactPerson: "Dr. Ruth Mutua", phone: "0733666777" }
+    ];
+
+    const INITIAL_DRIVERS = [
+      { id: "DRV-101", name: "Peter Mwangi", phone: "+254 701 112 233", vehicle: "KCF 482L (Cold Van)" },
+      { id: "DRV-102", name: "Grace Wanjiru", phone: "+254 702 334 455", vehicle: "KDG 109M (Cold Bike)" },
+      { id: "DRV-103", name: "Samuel Otieno", phone: "+254 703 556 677", vehicle: "KDF 884P (Refrigerated Truck)" },
+      { id: "DRV-104", name: "David Kimani", phone: "+254 704 778 899", vehicle: "KDB 310Q (Cold Express Unit)" }
+    ];
+
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const futureDateObj = new Date(now.getTime() + 86400000 * 3);
+    const futureStr = futureDateObj.toISOString().split('T')[0];
+
+    const subMinutes = (mins) => new Date(now.getTime() - mins * 60000).toISOString();
+    const subHours = (hrs) => new Date(now.getTime() - hrs * 3600000).toISOString();
+
+    const INITIAL_SHIPMENTS = [
+      { id: "SHP-1001", facility: "Aga Khan University Hospital", address: "3rd Parklands Avenue, Nairobi", medicine: "Pfizer-BioNTech COVID-19 Vaccine (Requires -70°C)", tempMin: -80, tempMax: -60, driver: "Peter Mwangi", driverName: "Peter Mwangi", driverPhone: "+254 701 112 233", driverVehicle: "KCF 482L (Cold Van)", receiverName: "Admin Test", receiverPhone: "0702896052", scheduledDate: todayStr, scheduledTime: "08:00", status: "in_transit", createdAt: subHours(2), deliveredAt: null, confirmationCode: "4821", recipientName: null, notes: "Ultra-low temperature consignment.", currentTemp: -71.8, etaMinutes: 18 },
+      { id: "SHP-1002", facility: "Mater Misericordiae Hospital", address: "Mariakani Road, South B, Nairobi", medicine: "Fresh Frozen Blood Plasma (-30°C)", tempMin: -40, tempMax: -20, driver: "David Kimani", driverName: "David Kimani", driverPhone: "+254 704 778 899", driverVehicle: "KDB 310Q (Cold Express Unit)", receiverName: "Dr. Joseph Omondi", receiverPhone: "0702777888", scheduledDate: todayStr, scheduledTime: "08:30", status: "in_transit", createdAt: subHours(1.5), deliveredAt: null, confirmationCode: "3309", recipientName: null, notes: "Emergency transfusion unit transfer.", currentTemp: -28.4, etaMinutes: 12 },
+      { id: "SHP-1003", facility: "Moi Teaching and Referral Hospital", address: "Nandi Road, Eldoret", medicine: "AstraZeneca COVID-19 Vaccine (2-8°C)", tempMin: 2, tempMax: 8, driver: "Peter Mwangi", driverName: "Peter Mwangi", driverPhone: "+254 701 112 233", driverVehicle: "KCF 482L (Cold Van)", receiverName: "Dr. Emmanuel Kiprop", receiverPhone: "0733333444", scheduledDate: todayStr, scheduledTime: "09:00", status: "scheduled", createdAt: subMinutes(45), deliveredAt: null, confirmationCode: "8831", recipientName: null, notes: "Regional distribution box 4. Due today.", currentTemp: null, etaMinutes: 45 },
+      { id: "SHP-1004", facility: "Gertrude's Children's Hospital", address: "Muthaiga Road, Nairobi", medicine: "Measles-Rubella Vaccine (2-8°C)", tempMin: 2, tempMax: 8, driver: "Grace Wanjiru", driverName: "Grace Wanjiru", driverPhone: "+254 702 334 455", driverVehicle: "KDG 109M (Cold Bike)", receiverName: "Dr. Lucy Kamau", receiverPhone: "0701555666", scheduledDate: todayStr, scheduledTime: "09:30", status: "in_transit", createdAt: subHours(1), deliveredAt: null, confirmationCode: "6140", recipientName: null, notes: "Pediatric immunization batch.", currentTemp: 4.2, etaMinutes: 15 },
+      { id: "SHP-1005", facility: "The Nairobi Hospital", address: "Argwings Kodhek Road, Upper Hill, Nairobi", medicine: "Insulin glargine 100 IU/mL (2-8°C)", tempMin: 2, tempMax: 8, driver: "David Kimani", driverName: "David Kimani", driverPhone: "+254 704 778 899", driverVehicle: "KDB 310Q (Cold Express Unit)", receiverName: "Dr. David Njoroge", receiverPhone: "0720000111", scheduledDate: todayStr, scheduledTime: "07:00", status: "delivered", createdAt: subHours(4), deliveredAt: subHours(1), confirmationCode: "5512", recipientName: "Dr. David Njoroge", notes: "Handover completed.", currentTemp: 3.9, etaMinutes: 0 },
+      { id: "SHP-1006", facility: "Mama Lucy Kibaki Hospital", address: "Kangundo Rd, Embakasi, Nairobi", medicine: "Oxytocin 10 IU/mL Injection (2-8°C)", tempMin: 2, tempMax: 8, driver: "Grace Wanjiru", driverName: "Grace Wanjiru", driverPhone: "+254 702 334 455", driverVehicle: "KDG 109M (Cold Bike)", receiverName: "Dr. Grace Wanjiru", receiverPhone: "0722987654", scheduledDate: todayStr, scheduledTime: "10:00", status: "in_transit", createdAt: subHours(2.5), deliveredAt: null, confirmationCode: "9102", recipientName: null, notes: "Maternal health cold chain.", currentTemp: 5.1, etaMinutes: 20 },
+      { id: "SHP-1007", facility: "Mbagathi County Hospital", address: "Mbagathi Way, Kibera, Nairobi", medicine: "Tetanus Toxoid Vaccine (2-8°C)", tempMin: 2, tempMax: 8, driver: "Peter Mwangi", driverName: "Peter Mwangi", driverPhone: "+254 701 112 233", driverVehicle: "KCF 482L (Cold Van)", receiverName: "Dr. Samuel Otieno", receiverPhone: "0733456789", scheduledDate: futureStr, scheduledTime: "14:00", status: "scheduled", createdAt: subMinutes(20), deliveredAt: null, confirmationCode: "2094", recipientName: null, notes: "Scheduled for future delivery date.", currentTemp: null, etaMinutes: 25 },
+      { id: "SHP-1008", facility: "Kenyatta National Hospital", address: "Hospital Road, Upper Hill, Nairobi", medicine: "Oral Polio Vaccine (bOPV 2-8°C)", tempMin: 2, tempMax: 8, driver: "Peter Mwangi", driverName: "Peter Mwangi", driverPhone: "+254 701 112 233", driverVehicle: "KCF 482L (Cold Van)", receiverName: "Dr. Sarah Maina", receiverPhone: "0712345678", scheduledDate: todayStr, scheduledTime: "06:30", status: "delivered", createdAt: subHours(5), deliveredAt: subHours(2), confirmationCode: "1190", recipientName: "Dr. Sarah Maina", notes: "Received in pristine condition.", currentTemp: 4.6, etaMinutes: 0 },
+      { id: "SHP-1009", facility: "Jaramogi Oginga Odinga Referral Hospital", address: "Kaloleni, Kisumu", medicine: "Anti-Rabies Immunoglobulin (2-8°C)", tempMin: 2, tempMax: 8, driver: "Grace Wanjiru", driverName: "Grace Wanjiru", driverPhone: "+254 702 334 455", driverVehicle: "KDG 109M (Cold Bike)", receiverName: "Dr. Florence Anyango", receiverPhone: "0711222333", scheduledDate: todayStr, scheduledTime: "08:00", status: "issue", createdAt: subHours(6), deliveredAt: subHours(3), confirmationCode: "7481", recipientName: "Dr. Florence Anyango", notes: "Temperature logged 9.6°C exceeding limit.", currentTemp: 9.6, etaMinutes: 0 },
+      { id: "SHP-1010", facility: "Coast General Teaching & Referral Hospital", address: "VOK Area, Kisauni, Mombasa", medicine: "Rotavirus Vaccine (2-8°C)", tempMin: 2, tempMax: 8, driver: "Samuel Otieno", driverName: "Samuel Otieno", driverPhone: "+254 703 556 677", driverVehicle: "KDF 884P (Refrigerated Truck)", receiverName: "Dr. Hassan Ali", receiverPhone: "0703999000", scheduledDate: todayStr, scheduledTime: "11:00", status: "in_transit", createdAt: subHours(3), deliveredAt: null, confirmationCode: "7721", recipientName: null, notes: "Coastal route cold transport.", currentTemp: 6.8, etaMinutes: 30 },
+      { id: "SHP-1011", facility: "Nakuru Level 5 Hospital", address: "Showground Road, Nakuru", medicine: "Yellow Fever Vaccine (2-8°C)", tempMin: 2, tempMax: 8, driver: "Peter Mwangi", driverName: "Peter Mwangi", driverPhone: "+254 701 112 233", driverVehicle: "KCF 482L (Cold Van)", receiverName: "Dr. Bernard Njuguna", receiverPhone: "0722444555", scheduledDate: todayStr, scheduledTime: "06:00", status: "delivered", createdAt: subHours(7), deliveredAt: subHours(4), confirmationCode: "9012", recipientName: "Dr. Bernard Njuguna", notes: "Verified 5.0°C store log.", currentTemp: 5.0, etaMinutes: 0 },
+      { id: "SHP-1012", facility: "Machakos Level 5 Hospital", address: "Machakos-Kitui Road, Machakos", medicine: "Hepatitis B Recombinant Vaccine (2-8°C)", tempMin: 2, tempMax: 8, driver: "David Kimani", driverName: "David Kimani", driverPhone: "+254 704 778 899", driverVehicle: "KDB 310Q (Cold Express Unit)", receiverName: "Dr. Ruth Mutua", receiverPhone: "0733666777", scheduledDate: todayStr, scheduledTime: "12:00", status: "scheduled", createdAt: subMinutes(10), deliveredAt: null, confirmationCode: "4428", recipientName: null, notes: "County store allocation. Scheduled today.", currentTemp: null, etaMinutes: 35 }
+    ];
+
+    const INITIAL_TEMP_LOGS = [
+      { shipmentId: "SHP-1001", timestamp: subMinutes(110), temperature: -73.5 },
+      { shipmentId: "SHP-1001", timestamp: subMinutes(50), temperature: -72.8 },
+      { shipmentId: "SHP-1001", timestamp: subMinutes(5), temperature: -71.8 },
+      { shipmentId: "SHP-1002", timestamp: subMinutes(80), temperature: -29.2 },
+      { shipmentId: "SHP-1002", timestamp: subMinutes(20), temperature: -28.4 },
+      { shipmentId: "SHP-1004", timestamp: subMinutes(50), temperature: 4.5 },
+      { shipmentId: "SHP-1004", timestamp: subMinutes(10), temperature: 4.2 },
+      { shipmentId: "SHP-1005", timestamp: subHours(3), temperature: 3.7 },
+      { shipmentId: "SHP-1005", timestamp: subHours(1), temperature: 3.9 },
+      { shipmentId: "SHP-1006", timestamp: subMinutes(90), temperature: 4.8 },
+      { shipmentId: "SHP-1006", timestamp: subMinutes(30), temperature: 5.1 },
+      { shipmentId: "SHP-1008", timestamp: subHours(4), temperature: 4.4 },
+      { shipmentId: "SHP-1008", timestamp: subHours(2), temperature: 4.6 },
+      { shipmentId: "SHP-1009", timestamp: subHours(5), temperature: 7.2 },
+      { shipmentId: "SHP-1009", timestamp: subHours(3), temperature: 9.6 },
+      { shipmentId: "SHP-1010", timestamp: subMinutes(120), temperature: 6.2 },
+      { shipmentId: "SHP-1010", timestamp: subMinutes(15), temperature: 6.8 },
+      { shipmentId: "SHP-1011", timestamp: subHours(6), temperature: 4.9 },
+      { shipmentId: "SHP-1011", timestamp: subHours(4), temperature: 5.0 }
+    ];
+
+    const INITIAL_ISSUES = [
+      { id: "ISS-101", shipmentId: "SHP-1009", type: "temperature breach", notes: "Temperature logged at 9.6°C exceeding safe 8°C limit.", timestamp: subHours(3), facility: "Jaramogi Oginga Odinga Referral Hospital", reportedBy: "Dr. Florence Anyango" }
+    ];
+
+    const INITIAL_NOTIFICATIONS = [
+      { id: "NOT-101", timestamp: subHours(1), message: "The Nairobi Hospital confirmed receipt of Insulin glargine 100 IU/mL. Driver David Kimani notified.", type: "delivery_confirmed", hospital: "The Nairobi Hospital" },
+      { id: "NOT-102", timestamp: subHours(2), message: "Dispatch started for Aga Khan University Hospital by driver Peter Mwangi.", type: "trip_started", hospital: "Aga Khan University Hospital" },
+      { id: "NOT-103", timestamp: subHours(3), message: "ALERT: Jaramogi Oginga Odinga Referral reported temperature breach alert (9.6°C).", type: "breach_alert", hospital: "Jaramogi Oginga Odinga Referral Hospital" }
+    ];
+
+    // --- LOCALSTORAGE SERVICE ---
+    const KEYS = {
+      VERSION: 'post4health_seed_v7_admin_scheduling',
+      SHIPMENTS: 'post4health_shipments',
+      TEMP_LOGS: 'post4health_temp_logs',
+      ISSUES: 'post4health_issues',
+      FACILITIES: 'post4health_facilities',
+      DRIVERS: 'post4health_drivers',
+      NOTIFICATIONS: 'post4health_notifications'
+    };
+
+    const storageService = {
+      init() {
+        if (localStorage.getItem(KEYS.VERSION) !== 'post4health_seed_v7_admin_scheduling') {
+          this.resetToSeed();
+        }
+      },
+      resetToSeed() {
+        localStorage.setItem(KEYS.VERSION, 'post4health_seed_v7_admin_scheduling');
+        localStorage.setItem(KEYS.SHIPMENTS, JSON.stringify(INITIAL_SHIPMENTS));
+        localStorage.setItem(KEYS.TEMP_LOGS, JSON.stringify(INITIAL_TEMP_LOGS));
+        localStorage.setItem(KEYS.ISSUES, JSON.stringify(INITIAL_ISSUES));
+        localStorage.setItem(KEYS.FACILITIES, JSON.stringify(INITIAL_FACILITIES));
+        localStorage.setItem(KEYS.DRIVERS, JSON.stringify(INITIAL_DRIVERS));
+        localStorage.setItem(KEYS.NOTIFICATIONS, JSON.stringify(INITIAL_NOTIFICATIONS));
+      },
+      getShipments() {
+        try {
+          const data = localStorage.getItem(KEYS.SHIPMENTS);
+          return data ? JSON.parse(data) : INITIAL_SHIPMENTS;
+        } catch(e) { return INITIAL_SHIPMENTS; }
+      },
+      saveShipments(s) { localStorage.setItem(KEYS.SHIPMENTS, JSON.stringify(s)); },
+      updateShipmentStatus(id, newStatus, extraData = {}) {
+        const list = this.getShipments();
+        let targetShipment = null;
+        const updated = list.map(item => {
+          if (item.id === id) {
+            targetShipment = { ...item, status: newStatus, ...extraData };
+            return targetShipment;
+          }
+          return item;
+        });
+
+        this.saveShipments(updated);
+
+        if (targetShipment) {
+          if (newStatus === 'in_transit') {
+            this.addNotification({
+              id: `NOT-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+              message: `Dispatch started for ${targetShipment.facility} (${targetShipment.medicine}). Driver ${targetShipment.driverName || targetShipment.driver} is en route. Receiver ${targetShipment.receiverName || 'Pharmacy Officer'} (${targetShipment.receiverPhone || ''}) notified.`,
+              type: 'trip_started',
+              hospital: targetShipment.facility
+            });
+          } else if (newStatus === 'delivered') {
+            this.addNotification({
+              id: `NOT-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+              message: `${targetShipment.facility} confirmed receipt & signed for ${targetShipment.medicine}. Driver ${targetShipment.driverName || targetShipment.driver} notified.`,
+              type: 'delivery_confirmed',
+              hospital: targetShipment.facility
+            });
+          }
+        }
+
+        return updated;
+      },
+      updateShipmentTemp(id, newTemp) {
+        const list = this.getShipments().map(item => item.id === id ? { ...item, currentTemp: newTemp } : item);
+        this.saveShipments(list);
+        return list;
+      },
+      decrementEtaMinutes() {
+        const list = this.getShipments();
+        let changed = false;
+        const updated = list.map(item => {
+          if (item.status === 'in_transit' && item.etaMinutes > 0) {
+            changed = true;
+            const newEta = item.etaMinutes - 1;
+            return {
+              ...item,
+              etaMinutes: newEta,
+              eta: newEta === 0 ? 'ARRIVING NOW' : `~${newEta} min`
+            };
+          }
+          return item;
+        });
+        if (changed) this.saveShipments(updated);
+        return updated;
+      },
+      getNotifications() {
+        try {
+          const data = localStorage.getItem(KEYS.NOTIFICATIONS);
+          return data ? JSON.parse(data) : INITIAL_NOTIFICATIONS;
+        } catch(e) { return INITIAL_NOTIFICATIONS; }
+      },
+      addNotification(notif) {
+        const list = this.getNotifications();
+        const updated = [notif, ...list];
+        localStorage.setItem(KEYS.NOTIFICATIONS, JSON.stringify(updated));
+        return updated;
+      },
+      addShipment(newShipment) {
+        const list = [newShipment, ...this.getShipments()];
+        this.saveShipments(list);
+        this.addTempLog({ shipmentId: newShipment.id, timestamp: new Date().toISOString(), temperature: newShipment.currentTemp || 4.5 });
+        this.addNotification({
+          id: `NOT-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          message: `New consignment ${newShipment.id} scheduled for ${newShipment.facility}. Assigned to driver ${newShipment.driverName || newShipment.driver} & receiver ${newShipment.receiverName || 'Pharmacy Officer'}.`,
+          type: 'shipment_created',
+          hospital: newShipment.facility
+        });
+        return list;
+      },
+      getTempLogs(shipmentId = null) {
+        try {
+          const data = localStorage.getItem(KEYS.TEMP_LOGS);
+          const logs = data ? JSON.parse(data) : INITIAL_TEMP_LOGS;
+          return shipmentId ? logs.filter(l => l.shipmentId === shipmentId) : logs;
+        } catch(e) { return INITIAL_TEMP_LOGS; }
+      },
+      addTempLog(logEntry) {
+        const logs = [...this.getTempLogs(), logEntry];
+        localStorage.setItem(KEYS.TEMP_LOGS, JSON.stringify(logs));
+        return logs;
+      },
+      getIssues(shipmentId = null) {
+        try {
+          const data = localStorage.getItem(KEYS.ISSUES);
+          const issues = data ? JSON.parse(data) : INITIAL_ISSUES;
+          return shipmentId ? issues.filter(i => i.shipmentId === shipmentId) : issues;
+        } catch(e) { return INITIAL_ISSUES; }
+      },
+      addIssue(issueEntry) {
+        const issues = [issueEntry, ...this.getIssues()];
+        localStorage.setItem(KEYS.ISSUES, JSON.stringify(issues));
+        this.updateShipmentStatus(issueEntry.shipmentId, 'issue', { notes: issueEntry.notes });
+        return issues;
+      },
+      getFacilities() {
+        try {
+          const data = localStorage.getItem(KEYS.FACILITIES);
+          return data ? JSON.parse(data) : INITIAL_FACILITIES;
+        } catch(e) { return INITIAL_FACILITIES; }
+      },
+      getDrivers() {
+        try {
+          const data = localStorage.getItem(KEYS.DRIVERS);
+          return data ? JSON.parse(data) : INITIAL_DRIVERS;
+        } catch(e) { return INITIAL_DRIVERS; }
+      }
+    };
+
+    // --- SPLASH SCREEN COMPONENT ---
+    function SplashScreen() {
+      return (
+        <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+          <div className="flex flex-col items-center space-y-6 max-w-xs">
+            <div className="relative">
+              <div className="absolute -inset-4 rounded-full bg-emerald-100/60 blur-xl"></div>
+              <img
+                src="post4healthwellnessemblem.png"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'file:///android_res/drawable/post4healthwellnessemblem.png';
+                }}
+                alt="Post4Health Emblem"
+                className="relative w-32 h-32 object-contain drop-shadow-md"
+              />
+            </div>
+
+            <div>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Post4Health</h1>
+              <p className="text-xs font-bold text-[#006b3f] uppercase tracking-wider mt-1.5">Secure Medical Logistics</p>
+            </div>
+
+            <div className="flex flex-col items-center space-y-3 pt-4">
+              <div className="w-10 h-10 border-4 border-emerald-100 border-t-[#006b3f] rounded-full animate-spin shadow-sm"></div>
+              <p className="text-xs font-extrabold text-slate-700 tracking-wide animate-pulse">
+                Loading Secure Logistics...
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- NOTIFICATION DISPATCH MODAL (WHATSAPP DEEP LINK) ---
+    function NotificationModal({ shipment, isOpen, onClose }) {
+      if (!isOpen || !shipment) return null;
+      const receiverName = shipment.receiverName || "Receiver Officer";
+      const rawPhone = shipment.receiverPhone || "0702896052";
+      const facility = shipment.facility || "Hospital";
+      const medicine = shipment.medicine || "Vaccine Payload";
+      const driverName = shipment.driverName || shipment.driver || "Driver";
+
+      const formatPhone = (phoneStr) => {
+        const clean = phoneStr.replace(/[^0-9]/g, '');
+        if (clean.startsWith('0')) return '254' + clean.slice(1);
+        if (clean.startsWith('254')) return clean;
+        return '254' + clean;
+      };
+
+      const formattedPhone = formatPhone(rawPhone);
+      const messageText = `Hello ${receiverName}, your medical delivery of ${medicine} from Posta is on the way. Driver: ${driverName}.`;
+      const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(messageText)}`;
+
+      return (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
+            <div className="bg-[#006b3f] px-5 py-4 text-white flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-base">Consignment Dispatch Alert</h3>
+                <p className="text-xs text-emerald-100 font-semibold">Simulated SMS & WhatsApp Gateway</p>
+              </div>
+              <button onClick={onClose} className="text-white/80 hover:text-white font-black text-lg">✕</button>
+            </div>
+            <div className="p-5 space-y-4 text-xs">
+              <div className="bg-emerald-50 border border-emerald-300 rounded-lg p-3 text-slate-800">
+                <p className="font-black text-[#006b3f] text-xs">✓ Notification Sent Successfully</p>
+                <p className="text-slate-700 font-medium mt-1">
+                  Notification sent to <strong>{receiverName}</strong> ({rawPhone}) at <strong>{facility}</strong> via SMS/WhatsApp.
+                </p>
+              </div>
+
+              <div className="bg-slate-50 p-3 rounded-lg border border-slate-300 space-y-1.5">
+                <span className="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider block">PRE-FILLED WHATSAPP MESSAGE</span>
+                <p className="text-slate-900 font-mono text-xs bg-white p-2.5 rounded border border-slate-300 font-semibold italic">
+                  "{messageText}"
+                </p>
+              </div>
+
+              <div className="pt-2 space-y-2">
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 rounded-lg bg-[#25D366] hover:bg-[#1eae53] text-white font-extrabold text-xs shadow-md transition flex items-center justify-center space-x-2"
+                >
+                  <span>Open WhatsApp ({formattedPhone})</span>
+                </a>
+                <button onClick={onClose} className="w-full py-2 rounded-lg bg-slate-100 text-slate-800 font-extrabold border border-slate-300 hover:bg-slate-200">
+                  Close Alert
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- SIMULATED MAP COMPONENT ---
+    function SimulatedMap({ shipment }) {
+      if (!shipment) return null;
+      const eta = shipment.etaMinutes !== undefined ? shipment.etaMinutes : 15;
+      const isArrivingNow = shipment.status === 'in_transit' && eta <= 0;
+      const isDelivered = shipment.status === 'delivered';
+      const isBreach = shipment.currentTemp !== null && (shipment.currentTemp < shipment.tempMin || shipment.currentTemp > shipment.tempMax);
+
+      const animDuration = Math.max(5, Math.min(eta, 60)) + 's';
+
+      return (
+        <div className="bg-[#0f172a] rounded-xl border border-slate-800 text-white overflow-hidden shadow-lg">
+          <style>{`
+            @keyframes driveRoute {
+              0% { left: 14%; transform: translateY(-50%); }
+              50% { left: 46%; transform: translateY(-62%); }
+              100% { left: 78%; transform: translateY(-50%); }
+            }
+            @keyframes dashMove {
+              0% { stroke-dashoffset: 24; }
+              100% { stroke-dashoffset: 0; }
+            }
+            .animate-truck-path { animation: driveRoute ${animDuration} linear infinite; }
+            .animate-dash-route { animation: dashMove 1.5s linear infinite; }
+          `}</style>
+
+          <div className="bg-slate-900 border-b border-slate-800 p-3 flex items-center justify-between text-xs">
+            <div className="flex items-center space-x-2">
+              <span className={`w-2.5 h-2.5 rounded-full ${isArrivingNow || isDelivered ? 'bg-emerald-400' : 'bg-emerald-400 animate-ping'}`}></span>
+              <span className="font-extrabold text-emerald-400 uppercase tracking-wider text-[11px]">
+                LIVE SATELLITE GPS TELEMETRY
+              </span>
+            </div>
+
+            <span className={`text-xs font-extrabold px-3 py-1 rounded-full ${
+              isDelivered || isArrivingNow ? 'bg-emerald-400 text-slate-950' : 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300'
+            }`}>
+              {isDelivered ? 'Delivered' : isArrivingNow ? 'ARRIVING NOW' : `Estimated Arrival: ${eta} mins`}
+            </span>
+          </div>
+
+          <div className="relative h-44 bg-slate-950 p-4 flex items-center justify-between overflow-hidden">
+            <svg className="absolute inset-0 w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                  <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#38bdf8" strokeWidth="0.5" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid)" />
+            </svg>
+
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M 50 88 Q 180 35 340 88" fill="none" stroke="#334155" strokeWidth="6" strokeLinecap="round" />
+              <path d="M 50 88 Q 180 35 340 88" fill="none" stroke="#10b981" strokeWidth="3.5" strokeDasharray="6 6" strokeLinecap="round" className="animate-dash-route" />
+            </svg>
+
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="w-10 h-10 rounded-xl bg-[#006b3f] border-2 border-emerald-400 flex items-center justify-center text-white shadow-lg text-sm font-bold">
+                🛡
+              </div>
+              <span className="text-[11px] font-extrabold text-slate-200 mt-1 uppercase tracking-wider bg-slate-900/90 px-2.5 py-0.5 rounded border border-slate-700 shadow">
+                Posta Central Hub
+              </span>
+            </div>
+
+            <div
+              className={`absolute top-1/2 z-20 flex flex-col items-center pointer-events-none ${
+                isDelivered || isArrivingNow ? '' : 'animate-truck-path'
+              }`}
+              style={isDelivered || isArrivingNow ? { left: '78%', transform: 'translateY(-50%)' } : {}}
+            >
+              <div className="relative">
+                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
+                </span>
+                <div className="w-10 h-10 rounded-xl bg-slate-800 border-2 border-emerald-400 flex items-center justify-center text-emerald-400 shadow-xl text-lg">
+                  🚚
+                </div>
+              </div>
+              <div className="bg-slate-900 border border-emerald-400/60 px-2 py-0.5 rounded text-center mt-1 whitespace-nowrap shadow-lg">
+                <span className="text-xs font-bold text-emerald-400 font-mono block">{shipment.driverVehicle || "KCF 482L"}</span>
+                <span className="text-[10px] font-semibold text-slate-200 block">{isDelivered ? 'Arrived' : isArrivingNow ? 'ARRIVING NOW' : `${eta} min`}</span>
+              </div>
+            </div>
+
+            <div className="relative z-10 flex flex-col items-center">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg border-2 ${
+                isDelivered || isArrivingNow ? 'bg-emerald-600 border-emerald-300 animate-bounce' : 'bg-blue-600 border-blue-400'
+              }`}>
+                🏥
+              </div>
+              <span className="text-[11px] font-extrabold text-slate-200 mt-1 uppercase tracking-wider bg-slate-900/90 px-2.5 py-0.5 rounded border border-slate-700 max-w-[120px] truncate text-center shadow">
+                {shipment.facility}
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-slate-900 p-3.5 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-200">
+            <div>
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">DRIVER PROFILE</span>
+              <span className="font-extrabold text-white text-xs mt-0.5 block">{shipment.driverName || shipment.driver} ({shipment.driverVehicle || 'Cold Unit'})</span>
+            </div>
+            <div>
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">RECEIVER ASSIGNED</span>
+              <a href={`tel:${shipment.receiverPhone || '0702896052'}`} className="font-mono text-emerald-400 hover:underline font-bold text-xs mt-0.5 block">
+                {shipment.receiverName || "Receiver"} ({shipment.receiverPhone || "0702896052"})
+              </a>
+            </div>
+            <div>
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">DIGITAL SENSOR</span>
+              <span className={`font-mono font-black text-sm mt-0.5 block ${isBreach ? 'text-rose-400' : 'text-emerald-400'}`}>
+                {shipment.currentTemp !== null ? `${Number(shipment.currentTemp).toFixed(1)} °C` : '--.- °C'}
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- CSV EXPORT UTILITY ---
+    function exportCSV(shipments) {
+      const allLogs = storageService.getTempLogs();
+      const allIssues = storageService.getIssues();
+
+      const headers = ["Shipment ID", "Facility Name", "Medicine Type", "Driver Name", "Driver Phone", "Receiver Name", "Receiver Phone", "Scheduled Date", "Scheduled Time", "Status", "Required Min Temp (°C)", "Required Max Temp (°C)", "Recorded Min Temp (°C)", "Recorded Max Temp (°C)", "Total Readings", "Total Breaches", "Compliance Rate (%)", "Confirmation Code", "Recipient Name", "Reported Issues", "Created Date", "Delivered Date"];
+
+      const rows = shipments.map(s => {
+        const logs = allLogs.filter(l => l.shipmentId === s.id);
+        const shipmentIssues = allIssues.filter(i => i.shipmentId === s.id);
+
+        let minTemp = "N/A", maxTemp = "N/A", breaches = 0, complianceRate = "100.0";
+        if (logs.length > 0) {
+          const temps = logs.map(l => l.temperature);
+          minTemp = Math.min(...temps).toFixed(1);
+          maxTemp = Math.max(...temps).toFixed(1);
+          const breachCount = logs.filter(l => l.temperature < s.tempMin || l.temperature > s.tempMax).length;
+          breaches = breachCount;
+          complianceRate = (((logs.length - breachCount) / logs.length) * 100).toFixed(1);
+        }
+
+        const issueText = shipmentIssues.map(i => `${i.type}: ${i.notes}`).join(" | ") || "None";
+        const formattedCreated = s.createdAt ? new Date(s.createdAt).toLocaleString() : "";
+        const formattedDelivered = s.deliveredAt ? new Date(s.deliveredAt).toLocaleString() : "Not Delivered";
+
+        return [
+          `"${s.id}"`, `"${s.facility.replace(/"/g, '""')}"`, `"${s.medicine.replace(/"/g, '""')}"`, `"${(s.driverName || s.driver).replace(/"/g, '""')}"`, `"${(s.driverPhone || '').replace(/"/g, '""')}"`, `"${(s.receiverName || '').replace(/"/g, '""')}"`, `"${(s.receiverPhone || '').replace(/"/g, '""')}"`, `"${s.scheduledDate || ''}"`, `"${s.scheduledTime || ''}"`, `"${s.status.toUpperCase()}"`, s.tempMin, s.tempMax, minTemp, maxTemp, logs.length, breaches, `"${complianceRate}%"`, `"${s.confirmationCode}"`, `"${(s.recipientName || 'N/A').replace(/"/g, '""')}"`, `"${issueText.replace(/"/g, '""')}"`, `"${formattedCreated}"`, `"${formattedDelivered}"`
+        ].join(",");
+      });
+
+      const rawCsvString = [headers.join(","), ...rows].join("\n");
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const filename = `Post4Health_ColdChain_Compliance_Report_${timestamp}.csv`;
+
+      if (window.AndroidNative && window.AndroidNative.shareCSV) {
+        window.AndroidNative.shareCSV(rawCsvString, filename);
+        return;
+      }
+
+      const csvContent = "data:text/csv;charset=utf-8," + rawCsvString;
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // --- STATUS BADGE COMPONENT ---
+    function StatusBadge({ status, size = 'default' }) {
+      const styles = {
+        scheduled: { label: 'SCHEDULED', bg: 'bg-blue-100 text-blue-900 border-blue-300' },
+        pending: { label: 'PENDING', bg: 'bg-amber-100 text-amber-900 border-amber-300' },
+        in_transit: { label: 'IN TRANSIT', bg: 'bg-emerald-100 text-[#006b3f] border-emerald-300' },
+        delivered: { label: 'DELIVERED', bg: 'bg-emerald-100 text-emerald-950 border-emerald-300' },
+        issue: { label: 'ISSUE FLAGGED', bg: 'bg-rose-100 text-rose-900 border-rose-300' }
+      };
+      const curr = styles[status] || styles.scheduled;
+      const padding = size === 'sm' ? 'px-2.5 py-0.5 text-[10px]' : 'px-3 py-1 text-xs';
+      return (
+        <span className={`inline-flex items-center font-extrabold tracking-wider rounded-full border ${padding} ${curr.bg}`}>
+          {curr.label}
+        </span>
+      );
+    }
+
+    // --- NAVBAR COMPONENT ---
+    function Navbar({ activeRole, setActiveRole, onResetSeed, notificationCount = 3 }) {
+      return (
+        <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-40">
+          <div className="max-w-6xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3 cursor-pointer" onClick={onResetSeed} title="Click to reset seed data">
+                <img
+                  src="post4healthwellnessemblem.png"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'file:///android_res/drawable/post4healthwellnessemblem.png';
+                  }}
+                  alt="Post4Health Logo"
+                  className="h-11 w-auto object-contain flex-shrink-0 max-h-12"
+                />
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h1 className="text-xl font-black text-slate-900 leading-none tracking-tight">Post4Health</h1>
+                    <span className="text-[10px] font-extrabold bg-emerald-100 text-[#006b3f] px-2 py-0.5 rounded uppercase border border-emerald-200">Live</span>
+                  </div>
+                  <p className="text-xs font-bold text-slate-600 tracking-wide mt-1">SECURE MEDICAL LOGISTICS &bull; COLD-CHAIN MONITORING</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button onClick={() => setActiveRole('ADMIN')} title="Admin Notifications" className="relative p-2 rounded-lg border border-slate-300 text-[#006b3f] hover:bg-slate-50 font-bold">
+                  🔔
+                  {notificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[9px] font-black rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center animate-pulse">
+                      {notificationCount}
+                    </span>
+                  )}
+                </button>
+                <button onClick={onResetSeed} title="Reset Data" className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold">
+                  Reset Seed
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-2.5 border-t border-slate-200 flex items-center">
+              <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 w-full sm:w-auto justify-between sm:justify-start">
+                {[
+                  { id: 'DRIVER', label: 'Driver Console' },
+                  { id: 'FACILITY', label: 'Facility Receiving' },
+                  { id: 'ADMIN', label: 'Admin Dashboard' }
+                ].map(r => (
+                  <button
+                    key={r.id}
+                    onClick={() => setActiveRole(r.id)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
+                      activeRole === r.id ? 'bg-[#006b3f] text-white shadow-sm' : 'text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>{r.label}</span>
+                    {r.id === 'ADMIN' && notificationCount > 0 && (
+                      <span className="ml-1 bg-rose-600 text-white text-[9px] px-1.5 py-0.2 rounded-full font-black">
+                        {notificationCount}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </header>
+      );
+    }
+
+    // --- DRIVER VIEW COMPONENT ---
+    function DriverView({ shipments, onStartTrip, onOpenMarkDeliveredModal }) {
+      const [activeDriverFilter, setActiveDriverFilter] = useState('Peter Mwangi');
+      const driverList = ['Peter Mwangi', 'Grace Wanjiru', 'Samuel Otieno', 'David Kimani'];
+
+      const filteredShipments = shipments.filter(s => {
+        if (activeDriverFilter === 'ALL') return true;
+        return s.driverName === activeDriverFilter || s.driver === activeDriverFilter;
+      });
+
+      const liveTripsCount = filteredShipments.filter(s => s.status === 'in_transit').length;
+      const breachShipments = filteredShipments.filter(s => s.status === 'in_transit' && s.currentTemp !== null && (s.currentTemp < s.tempMin || s.currentTemp > s.tempMax));
+
+      const isScheduledInFuture = (scheduledDate, scheduledTime) => {
+        if (!scheduledDate) return false;
+        const now = new Date();
+        const timeStr = scheduledTime || '00:00';
+        const scheduledDateTime = new Date(`${scheduledDate}T${timeStr}`);
+        if (isNaN(scheduledDateTime.getTime())) return false;
+        return scheduledDateTime > now;
+      };
+
+      return (
+        <div className="space-y-6 max-w-4xl mx-auto px-4 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div>
+              <span className="text-xs font-black text-[#006b3f] uppercase tracking-wider block">DRIVER CONSOLE &bull; LOGISTICS DISPATCH</span>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">Driver Assigned Consignments</h2>
+              <p className="text-xs font-semibold text-slate-700 mt-1 max-w-xl">View scheduled deliveries and start trips when due to initiate live sensor telemetry & receiver alerts.</p>
+            </div>
+            <div className="self-start sm:self-center">
+              <div className="inline-flex items-center space-x-2 bg-emerald-100 border border-emerald-300 px-3.5 py-2 rounded-lg text-xs font-extrabold text-[#006b3f]">
+                <span>{liveTripsCount} active sensor stream(s)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Driver Switcher Pills */}
+          <div className="bg-white p-3 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+            <span className="text-xs font-black text-slate-900">Select Active Driver:</span>
+            <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar">
+              <button
+                onClick={() => setActiveDriverFilter('ALL')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition ${
+                  activeDriverFilter === 'ALL' ? 'bg-[#006b3f] text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                All Consignments
+              </button>
+              {driverList.map(drv => (
+                <button
+                  key={drv}
+                  onClick={() => setActiveDriverFilter(drv)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition whitespace-nowrap ${
+                    activeDriverFilter === drv ? 'bg-[#006b3f] text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  {drv}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {breachShipments.length > 0 && (
+            <div className="bg-rose-50 border border-rose-300 rounded-xl p-4 shadow-sm space-y-2">
+              <div className="flex items-start space-x-3">
+                <span className="text-rose-700 font-black text-sm">ALERT</span>
+                <div>
+                  <h3 className="font-extrabold text-xs text-rose-950 uppercase tracking-wide">CRITICAL TEMPERATURE BREACH DETECTED</h3>
+                  {breachShipments.map(s => (
+                    <p key={s.id} className="text-xs text-rose-900 font-bold mt-1">
+                      <strong>{s.facility}</strong> — Recorded {Number(s.currentTemp).toFixed(1)}°C (Safe limit: {s.tempMin} to {s.tempMax}°C). Transfer cargo to cold box!
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-5">
+            {filteredShipments.length === 0 ? (
+              <div className="bg-white rounded-xl p-8 text-center border border-slate-200 text-xs font-bold text-slate-600">No consignments assigned to {activeDriverFilter}.</div>
+            ) : (
+              filteredShipments.map(s => {
+                const isScheduled = s.status === 'scheduled';
+                const isPending = s.status === 'pending';
+                const isInTransit = s.status === 'in_transit';
+                const isDelivered = s.status === 'delivered';
+                const isBreach = isInTransit && s.currentTemp !== null && (s.currentTemp < s.tempMin || s.currentTemp > s.tempMax);
+
+                const isFuture = (isScheduled || isPending) && isScheduledInFuture(s.scheduledDate, s.scheduledTime);
+                const isDueTodayOrPast = (isScheduled || isPending) && !isFuture;
+
+                return (
+                  <div key={s.id} className={`bg-white rounded-xl p-5 shadow-sm border transition-all ${isBreach ? 'border-rose-400 ring-2 ring-rose-200' : isDueTodayOrPast ? 'border-amber-400 ring-1 ring-amber-200' : 'border-slate-200'}`}>
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-mono text-xs font-extrabold text-slate-800">{s.id}</span>
+                        {s.scheduledDate && (
+                          <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 font-mono">
+                            📅 {s.scheduledDate} {s.scheduledTime || ''}
+                          </span>
+                        )}
+                      </div>
+                      <StatusBadge status={s.status} />
+                    </div>
+
+                    {/* Due Today / Past Reminder Amber Banner */}
+                    {isDueTodayOrPast && (
+                      <div className="mt-3 bg-amber-100 border border-amber-300 rounded-lg p-3 text-amber-950 font-extrabold text-xs flex items-center justify-between">
+                        <span>⚠️ Reminder: Delivery due today!</span>
+                        <span className="font-mono text-amber-900 text-[11px] bg-amber-200 px-2 py-0.5 rounded">
+                          Scheduled: {s.scheduledDate} {s.scheduledTime || ''}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="mt-4">
+                      <h3 className="text-lg font-black text-slate-900 tracking-tight">{s.facility}</h3>
+                      <p className="text-xs text-slate-600 font-bold mt-0.5">{s.address}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                      <div className="bg-slate-50 p-4 rounded-lg border border-slate-300 flex flex-col justify-between">
+                        <div>
+                          <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">MEDICAL PAYLOAD</span>
+                          <h4 className="text-base font-black text-slate-900 mt-1">{s.medicine}</h4>
+                        </div>
+                        <div className="mt-3">
+                          <span className="inline-block bg-white border border-slate-300 text-slate-800 text-xs font-bold px-3 py-1 rounded-md">Range: {s.tempMin}°C to {s.tempMax}°C</span>
+                        </div>
+                      </div>
+
+                      <div className={`p-4 rounded-lg border flex flex-col justify-between ${isBreach ? 'bg-rose-50 border-rose-300' : isInTransit ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-300'}`}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">DIGITAL TELEMETRY</span>
+                          {isBreach && <span className="text-xs font-black bg-rose-600 text-white px-2 py-0.5 rounded">BREACH</span>}
+                        </div>
+                        <div className="mt-2">
+                          {isScheduled || isPending ? (
+                            <span className="font-mono text-2xl font-bold text-slate-400">--.- °C</span>
+                          ) : (
+                            <span className={`font-mono text-2xl font-black ${isBreach ? 'text-rose-600' : 'text-[#006b3f]'}`}>
+                              {Number(s.currentTemp).toFixed(1)} °C
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-bold text-slate-800">
+                      <div>
+                        <span>Driver: <strong className="text-slate-900">{s.driverName || s.driver}</strong></span> &bull; <span className="ml-1 text-emerald-800 font-mono">Receiver: {s.receiverName || "Officer"} ({s.receiverPhone || "0702896052"})</span> &bull; <span className="ml-1">Pin: <strong className="font-mono text-slate-950 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{s.confirmationCode}</strong></span>
+                      </div>
+                      <div className="flex items-center justify-end">
+                        {isFuture && (
+                          <button disabled className="px-5 py-2.5 rounded-lg bg-slate-200 text-slate-600 font-extrabold text-xs cursor-not-allowed border border-slate-300">
+                            Scheduled for {s.scheduledDate}
+                          </button>
+                        )}
+
+                        {isDueTodayOrPast && (
+                          <button onClick={() => onStartTrip(s.id)} className="px-5 py-2.5 rounded-lg bg-[#006b3f] hover:bg-[#005230] text-white font-extrabold text-xs shadow-sm transition">
+                            ▶ Start Trip
+                          </button>
+                        )}
+
+                        {isInTransit && (
+                          <button onClick={() => onOpenMarkDeliveredModal(s)} className="px-5 py-2.5 rounded-lg bg-[#006b3f] hover:bg-[#005230] text-white font-extrabold text-xs shadow-sm transition">
+                            Mark Delivered
+                          </button>
+                        )}
+
+                        {isDelivered && (
+                          <span className="text-xs font-extrabold text-slate-500">Completed</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // --- FACILITY VIEW COMPONENT ---
+    function FacilityView({ facilities, shipments, onOpenConfirmReceiptModal, onOpenReportIssueModal }) {
+      const [selectedFacility, setSelectedFacility] = useState(facilities[0]?.name || 'Aga Khan University Hospital');
+      const facilityShipments = shipments.filter(s => s.facility === selectedFacility);
+      const incomingShipments = facilityShipments.filter(s => s.status === 'scheduled' || s.status === 'pending' || s.status === 'in_transit');
+      const receivedShipments = facilityShipments.filter(s => s.status === 'delivered' || s.status === 'issue');
+      const inTransitShipment = incomingShipments.find(s => s.status === 'in_transit') || incomingShipments[0];
+
+      return (
+        <div className="space-y-6 max-w-4xl mx-auto px-4 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div>
+              <span className="text-xs font-black text-[#006b3f] uppercase tracking-wider block">FACILITY RECEIVING DESK</span>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">{selectedFacility}</h2>
+              <p className="text-xs font-semibold text-slate-700 mt-1 max-w-2xl">
+                {inTransitShipment ? `Estimated Arrival: ${inTransitShipment.etaMinutes || 15} mins · ${inTransitShipment.medicine}. Driver: ${inTransitShipment.driverName || inTransitShipment.driver} (${inTransitShipment.driverPhone || '+254 701 112 233'}). Assigned Receiver: ${inTransitShipment.receiverName || 'Pharmacy Officer'} (${inTransitShipment.receiverPhone || '0702896052'}).` : 'All scheduled incoming medical consignments received.'}
+              </p>
+            </div>
+            <div className="self-start sm:self-center">
+              <div className="inline-flex items-center space-x-2 bg-emerald-100 border border-emerald-300 px-3.5 py-2 rounded-lg text-xs font-extrabold text-[#006b3f]">
+                <span>{incomingShipments.length} En Route / Scheduled</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 overflow-x-auto pb-1.5 no-scrollbar">
+            {facilities.map(f => (
+              <button
+                key={f.id}
+                onClick={() => setSelectedFacility(f.name)}
+                className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all whitespace-nowrap ${selectedFacility === f.name ? 'bg-[#006b3f] text-white shadow-sm' : 'bg-white border border-slate-300 text-slate-800 hover:bg-slate-100'}`}
+              >
+                {f.name}
+              </button>
+            ))}
+          </div>
+
+          {/* SIMULATED MAP IN FACILITY VIEW */}
+          {inTransitShipment && inTransitShipment.status === 'in_transit' && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider">SIMULATED LIVE VEHICLE TRACKING MAP</h3>
+                <span className="text-[11px] font-extrabold text-[#006b3f] font-mono bg-emerald-100 px-2.5 py-0.5 rounded border border-emerald-300">
+                  Live GPS Sync Active
+                </span>
+              </div>
+              <SimulatedMap shipment={inTransitShipment} />
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <h3 className="text-xs font-black text-slate-600 uppercase tracking-wider">INCOMING & SCHEDULED CONSIGNMENTS ({incomingShipments.length})</h3>
+            {incomingShipments.length === 0 ? (
+              <div className="bg-white rounded-xl p-6 text-center border border-slate-200 text-xs text-slate-600 font-bold">No active incoming shipments en route to {selectedFacility}.</div>
+            ) : (
+              incomingShipments.map(s => {
+                const isBreach = s.currentTemp !== null && (s.currentTemp < s.tempMin || s.currentTemp > s.tempMax);
+                return (
+                  <div key={s.id} className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-mono text-xs font-extrabold text-slate-600 block">{s.id}</span>
+                        <h4 className="text-base font-black text-slate-900 mt-0.5">{s.medicine}</h4>
+                      </div>
+                      <StatusBadge status={s.status} />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="bg-slate-50 p-4 rounded-lg border border-slate-300">
+                        <span className="text-xs font-extrabold text-slate-700 uppercase block">LIVE ETA & SCHEDULE</span>
+                        <div className="text-sm font-black text-[#006b3f] mt-1">
+                          {s.status === 'in_transit' ? `Estimated Arrival: ${s.etaMinutes || 15} mins` : `Scheduled: ${s.scheduledDate || 'Today'} ${s.scheduledTime ? 'at ' + s.scheduledTime : ''}`}
+                        </div>
+                        <div className="text-xs text-slate-800 font-bold mt-2 space-y-0.5">
+                          <div>Driver: <strong>{s.driverName || s.driver}</strong> ({s.driverVehicle || 'Cold Unit'})</div>
+                          <div>Assigned Receiver: <strong>{s.receiverName || 'Pharmacy Officer'}</strong> &bull; <a href={`tel:${s.receiverPhone || '0702896052'}`} className="text-emerald-800 font-mono font-bold hover:underline">{s.receiverPhone || '0702896052'}</a></div>
+                        </div>
+                      </div>
+
+                      <div className={`p-4 rounded-lg border flex items-center justify-between ${isBreach ? 'bg-rose-50 border-rose-300' : 'bg-emerald-50 border-emerald-300'}`}>
+                        <div>
+                          <span className="text-xs font-extrabold text-slate-700 uppercase block">LIVE SENSOR</span>
+                          <span className={`font-mono text-2xl font-black mt-1 block ${isBreach ? 'text-rose-600' : 'text-[#006b3f]'}`}>
+                            {s.currentTemp !== null ? `${Number(s.currentTemp).toFixed(1)} °C` : '--.- °C'}
+                          </span>
+                        </div>
+                        <span className={`text-xs font-black px-2.5 py-1 rounded uppercase ${isBreach ? 'bg-rose-600 text-white' : 'bg-emerald-200 text-[#006b3f]'}`}>
+                          {isBreach ? 'BREACH' : 'IN RANGE'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-200 text-xs font-bold text-slate-800">
+                      <div>Required Handover Pin: <strong className="font-mono text-slate-950 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 ml-1">{s.confirmationCode}</strong></div>
+                      <div className="flex items-center space-x-3">
+                        <button onClick={() => onOpenReportIssueModal(s)} className="px-4 py-2 rounded-lg border border-slate-400 bg-white hover:bg-slate-100 text-slate-800 font-extrabold">Report Issue</button>
+                        <button onClick={() => onOpenConfirmReceiptModal(s)} className="px-5 py-2 rounded-lg bg-[#006b3f] hover:bg-[#005230] text-white font-extrabold">Confirm Receipt</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">RECEIPT & AUDIT HISTORY</h3>
+              <span className="text-xs font-extrabold text-slate-700 font-mono">{receivedShipments.length} Record(s)</span>
+            </div>
+            {receivedShipments.length === 0 ? (
+              <p className="text-xs text-slate-600 font-semibold italic py-2">No historical deliveries logged for this facility.</p>
+            ) : (
+              <div className="space-y-2.5">
+                {receivedShipments.map(s => (
+                  <div key={s.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-300 text-xs">
+                    <div>
+                      <h4 className="font-extrabold text-slate-900">{s.medicine}</h4>
+                      <p className="text-xs text-slate-700 font-mono mt-0.5">{s.id} &bull; Received by <strong>{s.recipientName || s.receiverName || 'Officer'}</strong></p>
+                    </div>
+                    <StatusBadge status={s.status} size="sm" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // --- ADMIN DASHBOARD COMPONENT ---
+    function AdminDashboard({ shipments, onOpenNewShipmentModal, onOpenComplianceModal }) {
+      const [searchTerm, setSearchTerm] = useState('');
+      const [statusFilter, setStatusFilter] = useState('ALL');
+
+      const notifications = storageService.getNotifications();
+      const totalDeliveriesToday = shipments.length;
+      const inTransitCount = shipments.filter(s => s.status === 'in_transit').length;
+      const scheduledCount = shipments.filter(s => s.status === 'scheduled' || s.status === 'pending').length;
+      const deliveredCount = shipments.filter(s => s.status === 'delivered').length;
+      const breachesCount = shipments.filter(s => s.status === 'issue' || (s.currentTemp !== null && (s.currentTemp < s.tempMin || s.currentTemp > s.tempMax))).length;
+
+      const filtered = shipments.filter(s => {
+        const matchesSearch =
+          s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.facility.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.medicine.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (s.driverName || s.driver || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (s.receiverName || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+        if (statusFilter === 'ALL') return matchesSearch;
+        if (statusFilter === 'SCHEDULED') return matchesSearch && (s.status === 'scheduled' || s.status === 'pending');
+        if (statusFilter === 'IN_TRANSIT') return matchesSearch && s.status === 'in_transit';
+        if (statusFilter === 'DELIVERED') return matchesSearch && s.status === 'delivered';
+        if (statusFilter === 'ISSUE') return matchesSearch && s.status === 'issue';
+
+        return matchesSearch;
+      });
+
+      return (
+        <div className="space-y-6 max-w-5xl mx-auto px-4 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div>
+              <span className="text-xs font-black text-[#006b3f] uppercase tracking-wider block">OPERATIONS COMMAND &bull; REGULATORY AUDIT</span>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">Cold-Chain Operations & Scheduling</h2>
+              <p className="text-xs font-semibold text-slate-700 mt-1 max-w-xl">Schedule consignments, assign drivers and receivers, monitor telemetry, and export audit compliance logs.</p>
+            </div>
+            <div className="flex items-center space-x-2.5 self-start sm:self-center">
+              <button onClick={onOpenNewShipmentModal} className="px-4 py-2.5 rounded-lg bg-[#006b3f] hover:bg-[#005230] text-white text-xs font-extrabold shadow-sm transition">
+                + Schedule Delivery
+              </button>
+              <button onClick={() => exportCSV(shipments)} className="px-3.5 py-2.5 rounded-lg bg-slate-100 border border-slate-300 hover:bg-slate-200 text-slate-800 text-xs font-extrabold shadow-sm transition">
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">TOTAL CONSIGNMENTS</span>
+              <span className="text-2xl font-black text-slate-900 mt-1 block">{totalDeliveriesToday}</span>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">SCHEDULED / PENDING</span>
+              <span className="text-2xl font-black text-blue-900 mt-1 block">{scheduledCount}</span>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">IN TRANSIT</span>
+              <span className="text-2xl font-black text-[#006b3f] mt-1 block">{inTransitCount}</span>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">TEMP BREACHES</span>
+              <span className="text-2xl font-black text-rose-600 mt-1 block">{breachesCount}</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search ID, hospital, receiver, driver..."
+                  className="px-3.5 py-2 rounded-lg border border-slate-300 text-xs font-bold text-slate-900 placeholder:text-slate-500 bg-white"
+                />
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold text-slate-800"
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="SCHEDULED">Scheduled</option>
+                  <option value="IN_TRANSIT">In Transit</option>
+                  <option value="DELIVERED">Delivered</option>
+                  <option value="ISSUE">Issue Flagged</option>
+                </select>
+              </div>
+              <button onClick={onOpenNewShipmentModal} className="px-4 py-2.5 rounded-lg bg-[#006b3f] hover:bg-[#005230] text-white font-extrabold text-xs shadow-sm transition">
+                + Schedule Delivery
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-300 text-xs font-black text-slate-800 uppercase">
+                    <th className="py-3.5 px-4">Shipment ID</th>
+                    <th className="py-3.5 px-4">Destination & Payload</th>
+                    <th className="py-3.5 px-4">Assigned Receiver</th>
+                    <th className="py-3.5 px-4">Assigned Driver</th>
+                    <th className="py-3.5 px-4">Schedule</th>
+                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4 text-right">Telemetry</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filtered.map(s => {
+                    const isBreach = s.currentTemp !== null && (s.currentTemp < s.tempMin || s.currentTemp > s.tempMax);
+                    return (
+                      <tr key={s.id} onClick={() => onOpenComplianceModal(s)} className="hover:bg-slate-100/80 transition cursor-pointer">
+                        <td className="py-3.5 px-4 font-mono font-extrabold text-slate-800">{s.id}</td>
+                        <td className="py-3.5 px-4">
+                          <div className="font-black text-slate-900 text-sm">{s.facility}</div>
+                          <div className="text-slate-700 font-semibold text-xs mt-0.5">{s.medicine}</div>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-800 font-bold">
+                          <div>{s.receiverName || 'Receiver'}</div>
+                          <div className="text-xs text-emerald-800 font-mono font-bold mt-0.5">{s.receiverPhone || '0702896052'}</div>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-800 font-bold">
+                          <div>{s.driverName || s.driver}</div>
+                          <div className="text-[11px] text-slate-600 font-mono mt-0.5">{s.driverPhone || '+254701112233'}</div>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-800">
+                          <div>{s.scheduledDate || 'Today'}</div>
+                          <div className="text-[11px] text-slate-600">{s.scheduledTime || '--:--'}</div>
+                        </td>
+                        <td className="py-3.5 px-4"><StatusBadge status={s.status} /></td>
+                        <td className="py-3.5 px-4 text-right">
+                          {s.currentTemp === null ? (
+                            <div className="font-mono text-slate-400 font-bold">–</div>
+                          ) : (
+                            <div className={`font-mono font-black text-sm ${isBreach ? 'text-rose-600' : 'text-[#006b3f]'}`}>
+                              {Number(s.currentTemp).toFixed(1)}°C
+                            </div>
+                          )}
+                          <div className="text-[11px] text-slate-600 font-bold mt-0.5">{s.tempMin} to {s.tempMax}°C</div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="font-black text-slate-900 text-sm">Live Audit & Driver Notification Log</h3>
+              <span className="text-xs font-bold bg-slate-100 text-slate-800 px-2.5 py-1 rounded-full font-mono border border-slate-200">{notifications.length} Event(s)</span>
+            </div>
+            <div className="space-y-2 max-h-56 overflow-y-auto">
+              {notifications.map(notif => (
+                <div key={notif.id} className="p-3 rounded-lg bg-slate-50 border border-slate-300 text-xs flex justify-between gap-3">
+                  <div>
+                    <span className="font-extrabold text-slate-900 block">{notif.hospital}</span>
+                    <p className="text-slate-800 font-medium mt-0.5">{notif.message}</p>
+                  </div>
+                  <span className="text-xs font-mono text-slate-600 font-bold whitespace-nowrap">{new Date(notif.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- COMPLIANCE REPORT MODAL ---
+    function ComplianceReportModal({ shipment, isOpen, onClose }) {
+      if (!isOpen || !shipment) return null;
+      const logs = storageService.getTempLogs(shipment.id);
+      const issues = storageService.getIssues(shipment.id);
+
+      let minTemp = "N/A", maxTemp = "N/A", breaches = 0, complianceRate = "100.0%";
+      if (logs.length > 0) {
+        const temps = logs.map(l => l.temperature);
+        minTemp = Math.min(...temps).toFixed(1) + "°C";
+        maxTemp = Math.max(...temps).toFixed(1) + "°C";
+        breaches = logs.filter(l => l.temperature < shipment.tempMin || l.temperature > shipment.tempMax).length;
+        complianceRate = (((logs.length - breaches) / logs.length) * 100).toFixed(1) + "%";
+      }
+
+      return (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
+            <div className="bg-[#006b3f] px-5 py-4 text-white flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-base">Cold-Chain Audit Matrix</h3>
+                <p className="text-xs text-emerald-100 font-mono font-semibold">Consignment ID: {shipment.id}</p>
+              </div>
+              <button onClick={onClose} className="text-white/80 hover:text-white font-black text-lg">✕</button>
+            </div>
+            <div className="p-5 space-y-4 text-xs">
+              <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-300 text-center">
+                <div>
+                  <span className="text-[10px] font-extrabold text-slate-600 block uppercase">Recorded Range</span>
+                  <span className="font-mono font-black text-slate-900 mt-0.5 block text-sm">{minTemp} / {maxTemp}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-extrabold text-slate-600 block uppercase">Compliance Rate</span>
+                  <span className="font-mono font-black text-[#006b3f] mt-0.5 block text-sm">{complianceRate}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-extrabold text-slate-600 block uppercase">Breach Count</span>
+                  <span className={`font-mono font-black mt-0.5 block text-sm ${breaches > 0 ? 'text-rose-600' : 'text-slate-900'}`}>{breaches}</span>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-extrabold text-slate-900 mb-1.5 uppercase text-xs">Consignment Details</h4>
+                <div className="bg-white p-3.5 rounded-lg border border-slate-300 space-y-1.5 text-slate-800 font-semibold">
+                  <p><strong>Medicine:</strong> {shipment.medicine}</p>
+                  <p><strong>Facility:</strong> {shipment.facility}</p>
+                  <p><strong>Scheduled:</strong> {shipment.scheduledDate || 'Today'} {shipment.scheduledTime || ''}</p>
+                  <p><strong>Driver:</strong> {shipment.driverName || shipment.driver} ({shipment.driverPhone || ''})</p>
+                  <p><strong>Receiver:</strong> {shipment.receiverName || 'Officer'} ({shipment.receiverPhone || '0702896052'})</p>
+                  <p><strong>Handover Pin:</strong> <span className="font-mono font-black text-slate-950 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{shipment.confirmationCode}</span></p>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2 border-t border-slate-200">
+                <button onClick={() => exportCSV([shipment])} className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold border border-slate-300">Export Audit CSV</button>
+                <button onClick={onClose} className="px-4 py-2 rounded-lg bg-[#006b3f] text-white font-extrabold">Close Audit</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- MODALS ---
+    function MarkDeliveredModal({ shipment, isOpen, onClose, onConfirm }) {
+      const [code, setCode] = useState('');
+      const [name, setName] = useState('');
+      const [notes, setNotes] = useState('');
+      const [err, setErr] = useState('');
+
+      if (!isOpen || !shipment) return null;
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!code.trim()) { setErr('Please enter confirmation pin.'); return; }
+        if (code.trim() !== shipment.confirmationCode) { setErr(`Invalid pin! Expected: ${shipment.confirmationCode}`); return; }
+        if (!name.trim()) { setErr('Please enter recipient name.'); return; }
+        onConfirm(shipment.id, { confirmationCode: code.trim(), recipientName: name.trim(), notes: notes.trim(), deliveredAt: new Date().toISOString() });
+        onClose();
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
+            <div className="bg-[#006b3f] px-5 py-4 text-white flex items-center justify-between">
+              <h3 className="font-extrabold text-base">Confirm Delivery Receipt</h3>
+              <button onClick={onClose} className="text-white/80 hover:text-white font-black text-lg">✕</button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+              {err && <div className="bg-rose-50 text-rose-800 font-bold p-2.5 rounded-lg border border-rose-300">{err}</div>}
+              <div>
+                <label className="block font-bold text-slate-900 mb-1">Handover Pin *</label>
+                <input type="text" value={code} onChange={e => setCode(e.target.value)} placeholder={`Pin (Demo: ${shipment.confirmationCode})`} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg font-mono font-bold tracking-widest text-slate-900 bg-white" />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-900 mb-1">Recipient Full Name *</label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Dr. Sarah Maina" className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg font-bold text-slate-900 bg-white" />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-900 mb-1">Handover Remarks</label>
+                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows="2" placeholder="Inspection remarks..." className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg font-medium text-slate-900 bg-white" />
+              </div>
+              <div className="flex justify-end space-x-2 pt-2 border-t border-slate-200">
+                <button type="button" onClick={onClose} className="px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 font-extrabold hover:bg-slate-100">Cancel</button>
+                <button type="submit" className="px-4 py-2.5 rounded-lg bg-[#006b3f] text-white font-extrabold">Confirm Delivery</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    function ReportIssueModal({ shipment, isOpen, onClose, onSubmitIssue }) {
+      const [type, setType] = useState('temperature breach');
+      const [notes, setNotes] = useState('');
+      const [err, setErr] = useState('');
+
+      if (!isOpen || !shipment) return null;
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!notes.trim()) { setErr('Please provide issue notes.'); return; }
+        onSubmitIssue({ shipmentId: shipment.id, type, notes: notes.trim(), timestamp: new Date().toISOString(), facility: shipment.facility });
+        onClose();
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
+            <div className="bg-rose-700 px-5 py-4 text-white flex items-center justify-between">
+              <h3 className="font-extrabold text-base">Flag Consignment Issue</h3>
+              <button onClick={onClose} className="text-white/80 hover:text-white font-black text-lg">✕</button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+              {err && <div className="bg-rose-50 text-rose-800 font-bold p-2.5 rounded-lg border border-rose-300">{err}</div>}
+              <div>
+                <label className="block font-bold text-slate-900 mb-1">Issue Category *</label>
+                <select value={type} onChange={e => setType(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg bg-white font-bold text-slate-900">
+                  <option value="temperature breach">Temperature Breach</option>
+                  <option value="damaged packaging">Damaged Packaging</option>
+                  <option value="wrong item">Incorrect Consignment</option>
+                  <option value="short quantity">Short Quantity</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-bold text-slate-900 mb-1">Observational Notes *</label>
+                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows="3" placeholder="Describe findings..." className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg font-medium text-slate-900 bg-white" />
+              </div>
+              <div className="flex justify-end space-x-2 pt-2 border-t border-slate-200">
+                <button type="button" onClick={onClose} className="px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 font-extrabold hover:bg-slate-100">Cancel</button>
+                <button type="submit" className="px-4 py-2.5 rounded-lg bg-rose-600 text-white font-extrabold">Submit Issue</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    function NewShipmentModal({ isOpen, onClose, onCreateShipment, facilities, drivers }) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const timeStr = new Date().toTimeString().slice(0, 5);
+
+      const defaultFacility = facilities[0] || { name: 'Aga Khan University Hospital', location: '3rd Parklands Avenue, Nairobi', contactPerson: 'Admin Test', phone: '0702896052' };
+      const defaultDriver = drivers[0] || { name: 'Peter Mwangi', phone: '+254 701 112 233', vehicle: 'KCF 482L (Cold Van)' };
+
+      const [fac, setFac] = useState(defaultFacility.name);
+      const [addr, setAddr] = useState(defaultFacility.location);
+      const [med, setMed] = useState('AstraZeneca COVID-19 Vaccine (2-8°C)');
+      const [min, setMin] = useState(2);
+      const [max, setMax] = useState(8);
+
+      const [recName, setRecName] = useState(defaultFacility.contactPerson || 'Pharmacy Officer');
+      const [recPhone, setRecPhone] = useState(defaultFacility.phone || '0702896052');
+
+      const [drvName, setDrvName] = useState(defaultDriver.name);
+      const [drvPhone, setDrvPhone] = useState(defaultDriver.phone);
+      const [drvVehicle, setDrvVehicle] = useState(defaultDriver.vehicle);
+
+      const [sDate, setSDate] = useState(todayStr);
+      const [sTime, setSTime] = useState(timeStr);
+
+      const [notes, setNotes] = useState('Priority cold chain consignment dispatch.');
+
+      if (!isOpen) return null;
+
+      const handleFacilityChange = (name) => {
+        setFac(name);
+        const selected = facilities.find(f => f.name === name);
+        if (selected) {
+          setAddr(selected.location);
+          if (selected.contactPerson) setRecName(selected.contactPerson);
+          if (selected.phone) setRecPhone(selected.phone);
+        }
+      };
+
+      const handleDriverChange = (name) => {
+        setDrvName(name);
+        const selected = drivers.find(d => d.name === name);
+        if (selected) {
+          setDrvPhone(selected.phone);
+          setDrvVehicle(selected.vehicle);
+        }
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+
+        onCreateShipment({
+          id: `SHP-${Math.floor(1000 + Math.random() * 9000)}`,
+          facility: fac,
+          address: addr,
+          medicine: med,
+          tempMin: Number(min),
+          tempMax: Number(max),
+          driver: drvName,
+          driverName: drvName,
+          driverPhone: drvPhone,
+          driverVehicle: drvVehicle,
+          receiverName: recName,
+          receiverPhone: recPhone,
+          scheduledDate: sDate,
+          scheduledTime: sTime,
+          status: 'scheduled',
+          createdAt: new Date().toISOString(),
+          deliveredAt: null,
+          confirmationCode: Math.floor(1000 + Math.random() * 9000).toString(),
+          recipientName: null,
+          notes,
+          currentTemp: (Number(min) + Number(max)) / 2,
+          etaMinutes: 25
+        });
+        onClose();
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-xl w-full shadow-2xl overflow-hidden border border-slate-200 my-8">
+            <div className="bg-[#006b3f] px-5 py-4 text-white flex items-center justify-between">
+              <h3 className="font-extrabold text-base">Schedule New Medical Delivery</h3>
+              <button onClick={onClose} className="text-white/80 hover:text-white font-black text-lg">✕</button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-900 mb-1">Hospital / Facility *</label>
+                  <select value={fac} onChange={e => handleFacilityChange(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg bg-white font-bold text-slate-900">
+                    {facilities.map(f => <option key={f.id} value={f.name}>{f.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-900 mb-1">Delivery Address *</label>
+                  <input type="text" value={addr} onChange={e => setAddr(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg font-bold text-slate-900 bg-white" required />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-emerald-50/50 p-3 rounded-lg border border-emerald-200">
+                <div>
+                  <label className="block font-bold text-slate-900 mb-1">Receiver Name *</label>
+                  <input type="text" value={recName} onChange={e => setRecName(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-900 bg-white" required />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-900 mb-1">Receiver Phone *</label>
+                  <input type="tel" value={recPhone} onChange={e => setRecPhone(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono font-bold text-slate-900 bg-white" required />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-900 mb-1">Medicine Payload *</label>
+                <input type="text" value={med} onChange={e => setMed(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg font-bold text-slate-900 bg-white" required />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <div>
+                  <label className="block font-bold text-slate-900 mb-1">Min Temp (°C)</label>
+                  <input type="number" step="0.5" value={min} onChange={e => setMin(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-900 bg-white" required />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-900 mb-1">Max Temp (°C)</label>
+                  <input type="number" step="0.5" value={max} onChange={e => setMax(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-900 bg-white" required />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-900 mb-1">Assigned Driver</label>
+                  <select value={drvName} onChange={e => handleDriverChange(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg bg-white font-bold text-slate-900">
+                    {drivers.map(d => <option key={d.id} value={d.name}>{d.name} ({d.vehicle})</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-900 mb-1">Driver Phone *</label>
+                  <input type="tel" value={drvPhone} onChange={e => setDrvPhone(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg font-mono font-bold text-slate-900 bg-white" required />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 bg-blue-50/60 p-3 rounded-lg border border-blue-200">
+                <div>
+                  <label className="block font-bold text-slate-900 mb-1">Scheduled Date *</label>
+                  <input type="date" value={sDate} onChange={e => setSDate(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-900 bg-white" required />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-900 mb-1">Scheduled Time *</label>
+                  <input type="time" value={sTime} onChange={e => setSTime(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-900 bg-white" required />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-900 mb-1">Dispatch Instructions</label>
+                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows="2" className="w-full px-3 py-2 border border-slate-300 rounded-lg font-semibold text-slate-900 bg-white" />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2 border-t border-slate-200">
+                <button type="button" onClick={onClose} className="px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 font-extrabold hover:bg-slate-100">Cancel</button>
+                <button type="submit" className="px-5 py-2.5 rounded-lg bg-[#006b3f] text-white font-extrabold">+ Schedule Delivery</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // --- MAIN APP COMPONENT ---
+    function App() {
+      const [isLoading, setIsLoading] = useState(true);
+
+      useEffect(() => {
+        storageService.init();
+        const timer = setTimeout(() => {
+          setIsLoading(false);
+        }, 1500);
+        return () => clearTimeout(timer);
+      }, []);
+
+      const [activeRole, setActiveRole] = useState('ADMIN');
+      const [shipments, setShipments] = useState(() => storageService.getShipments());
+      const [facilities] = useState(() => storageService.getFacilities());
+      const [drivers] = useState(() => storageService.getDrivers());
+
+      const [selectedShipment, setSelectedShipment] = useState(null);
+      const [notificationShipment, setNotificationShipment] = useState(null);
+      const [isMarkDeliveredOpen, setIsMarkDeliveredOpen] = useState(false);
+      const [isReportIssueOpen, setIsReportIssueOpen] = useState(false);
+      const [isNewShipmentOpen, setIsNewShipmentOpen] = useState(false);
+      const [isComplianceModalOpen, setIsComplianceModalOpen] = useState(false);
+      const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+      const [toast, setToast] = useState(null);
+
+      const showToast = (msg) => {
+        setToast(msg);
+        if (window.AndroidNative && window.AndroidNative.showToast) {
+          window.AndroidNative.showToast(msg);
+        }
+        setTimeout(() => setToast(null), 4000);
+      };
+
+      const handleResetSeed = () => {
+        storageService.resetToSeed();
+        setShipments(storageService.getShipments());
+        showToast("Reset to initial sample data");
+      };
+
+      // Live Telemetry Simulation (every 5 seconds)
+      useEffect(() => {
+        if (isLoading) return;
+
+        const interval = setInterval(() => {
+          const currentList = storageService.getShipments();
+          const inTransitList = currentList.filter(s => s.status === 'in_transit');
+
+          if (inTransitList.length > 0) {
+            inTransitList.forEach(shipment => {
+              const isAnomaly = Math.random() < 0.12;
+              let newTemp;
+              if (isAnomaly) {
+                const goHigh = Math.random() > 0.5;
+                newTemp = goHigh
+                  ? shipment.tempMax + Number((Math.random() * 2.0 + 0.4).toFixed(1))
+                  : shipment.tempMin - Number((Math.random() * 1.5 + 0.4).toFixed(1));
+              } else {
+                const mid = (shipment.tempMin + shipment.tempMax) / 2;
+                const delta = (Math.random() - 0.5) * 1.6;
+                newTemp = Number((mid + delta).toFixed(1));
+                if (newTemp < shipment.tempMin) newTemp = shipment.tempMin + 0.2;
+                if (newTemp > shipment.tempMax) newTemp = shipment.tempMax - 0.2;
+              }
+
+              if ((newTemp < shipment.tempMin || newTemp > shipment.tempMax) && window.AndroidNative && window.AndroidNative.triggerVibration) {
+                window.AndroidNative.triggerVibration();
+              }
+
+              storageService.updateShipmentTemp(shipment.id, newTemp);
+              storageService.addTempLog({ shipmentId: shipment.id, timestamp: new Date().toISOString(), temperature: newTemp });
+            });
+
+            setShipments(storageService.getShipments());
+          }
+        }, 5000);
+
+        return () => clearInterval(interval);
+      }, [isLoading]);
+
+      // Live ETA Minutes Countdown Ticker (decrements every 10 seconds)
+      useEffect(() => {
+        if (isLoading) return;
+
+        const etaInterval = setInterval(() => {
+          const updatedList = storageService.decrementEtaMinutes();
+          setShipments(updatedList);
+        }, 10000);
+
+        return () => clearInterval(etaInterval);
+      }, [isLoading]);
+
+      const handleStartTrip = (id) => {
+        const target = shipments.find(s => s.id === id);
+        const updated = storageService.updateShipmentStatus(id, 'in_transit', { currentTemp: 4.2, etaMinutes: 15 });
+        setShipments(updated);
+        setNotificationShipment(target);
+        setIsNotificationModalOpen(true);
+        const receiver = target?.receiverName || 'Receiver';
+        const facility = target?.facility || 'Hospital';
+        showToast(`Notification sent to ${receiver} at ${facility} via SMS/WhatsApp.`);
+      };
+
+      const handleConfirmDelivery = (id, data) => {
+        const updated = storageService.updateShipmentStatus(id, 'delivered', { deliveredAt: data.deliveredAt, recipientName: data.recipientName, notes: data.notes, etaMinutes: 0 });
+        setShipments(updated);
+        showToast(`Receipt Confirmed & Signed. Driver & Admin notified.`);
+      };
+
+      const handleReportIssue = (issueData) => {
+        storageService.addIssue(issueData);
+        setShipments(storageService.getShipments());
+        showToast(`Issue flagged for ${issueData.shipmentId}. Admin notified.`);
+      };
+
+      const handleCreateShipment = (newShipment) => {
+        const updated = storageService.addShipment(newShipment);
+        setShipments(updated);
+        showToast(`Scheduled delivery ${newShipment.id} created! Driver & receiver assigned.`);
+      };
+
+      if (isLoading) {
+        return <SplashScreen />;
+      }
+
+      const unreadCount = storageService.getNotifications().length;
+
+      return (
+        <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
+          <Navbar activeRole={activeRole} setActiveRole={setActiveRole} onResetSeed={handleResetSeed} notificationCount={unreadCount} />
+
+          <main className="flex-1 pb-10">
+            {activeRole === 'DRIVER' && (
+              <DriverView
+                shipments={shipments}
+                onStartTrip={handleStartTrip}
+                onOpenMarkDeliveredModal={(s) => { setSelectedShipment(s); setIsMarkDeliveredOpen(true); }}
+              />
+            )}
+            {activeRole === 'FACILITY' && (
+              <FacilityView
+                facilities={facilities}
+                shipments={shipments}
+                onOpenConfirmReceiptModal={(s) => { setSelectedShipment(s); setIsMarkDeliveredOpen(true); }}
+                onOpenReportIssueModal={(s) => { setSelectedShipment(s); setIsReportIssueOpen(true); }}
+              />
+            )}
+            {activeRole === 'ADMIN' && (
+              <AdminDashboard
+                shipments={shipments}
+                onOpenNewShipmentModal={() => setIsNewShipmentOpen(true)}
+                onOpenComplianceModal={(s) => { setSelectedShipment(s); setIsComplianceModalOpen(true); }}
+              />
+            )}
+          </main>
+
+          {/* Toast Notification */}
+          {toast && (
+            <div className="fixed bottom-4 right-4 z-50 bg-[#006b3f] text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold transition-all">
+              ✓ {toast}
+            </div>
+          )}
+
+          {/* Modals */}
+          <MarkDeliveredModal
+            shipment={selectedShipment}
+            isOpen={isMarkDeliveredOpen}
+            onClose={() => setIsMarkDeliveredOpen(false)}
+            onConfirm={handleConfirmDelivery}
+          />
+          <ReportIssueModal
+            shipment={selectedShipment}
+            isOpen={isReportIssueOpen}
+            onClose={() => setIsReportIssueOpen(false)}
+            onSubmitIssue={handleReportIssue}
+          />
+          <NewShipmentModal
+            isOpen={isNewShipmentOpen}
+            onClose={() => setIsNewShipmentOpen(false)}
+            onCreateShipment={handleCreateShipment}
+            facilities={facilities}
+            drivers={drivers}
+          />
+          <ComplianceReportModal
+            shipment={selectedShipment}
+            isOpen={isComplianceModalOpen}
+            onClose={() => setIsComplianceModalOpen(false)}
+          />
+          <NotificationModal
+            shipment={notificationShipment}
+            isOpen={isNotificationModalOpen}
+            onClose={() => setIsNotificationModalOpen(false)}
+          />
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
